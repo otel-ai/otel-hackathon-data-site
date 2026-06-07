@@ -12,7 +12,7 @@ export default function ReservationsPage() {
   useEffect(() => {
     let active = true;
     setLoading(true);
-    listReservations(page, 25).then((res) => {
+    listReservations(page, 100).then((res) => {
       if (active) {
         setData(res);
         setLoading(false);

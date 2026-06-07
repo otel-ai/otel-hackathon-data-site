@@ -26,7 +26,7 @@ export interface ListResult {
   items: ReturnType<typeof toListItem>[];
 }
 
-export async function listReservations(page: number, pageSize = 25): Promise<ListResult> {
+export async function listReservations(page: number, pageSize = 100): Promise<ListResult> {
   const ds = getDataset();
   const all = ds.reservations;
   const totalItems = all.length;
