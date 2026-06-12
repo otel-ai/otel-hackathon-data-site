@@ -87,6 +87,7 @@ export default function ReservationDetailPage() {
           <Field label="channel_code" value={res.channel_code} />
           <Field label="source_name" value={res.source_name} />
           <Field label="rate_plan_code" value={res.rate_plan_code} />
+          <Field label="commercial_rate_code" value={res.rate_plan_code} />
           <Field label="adr_room" value={res.adr_room.toFixed(2)} />
           <Field label="lead_time" value={res.lead_time} />
           <Field label="company_name" value={res.company_name ?? "—"} />
@@ -103,6 +104,8 @@ export default function ReservationDetailPage() {
             <thead className="bg-slate-900/70 text-left text-xs uppercase tracking-wide text-slate-400">
               <tr>
                 <th className="px-4 py-3 font-medium">stay_date</th>
+                <th className="px-4 py-3 font-medium">property_date</th>
+                <th className="px-4 py-3 font-medium">financial_status</th>
                 <th className="px-4 py-3 text-right font-medium">
                   daily_room_revenue_before_tax
                 </th>
@@ -119,6 +122,8 @@ export default function ReservationDetailPage() {
                   data-stay-date={s.stay_date}
                 >
                   <td className="px-4 py-2.5 text-slate-200">{s.stay_date}</td>
+                  <td className="px-4 py-2.5 text-slate-200">{s.property_date}</td>
+                  <td className="px-4 py-2.5 text-slate-200">{s.financial_status}</td>
                   <td className="px-4 py-2.5 text-right tabular-nums text-slate-200">
                     {s.daily_room_revenue_before_tax.toFixed(2)}
                   </td>

@@ -53,8 +53,11 @@ export async function getReference() {
   const ds = getDataset();
   return {
     anchorDate: ds.anchor_date,
+    dataset_revision: ds.dataset_revision,
     room_type_lookup: ds.room_type_lookup,
+    rate_plan_lookup: ds.rate_plan_lookup,
     market_code_lookup: ds.market_code_lookup,
+    market_macro_group_history: ds.market_macro_group_history,
     channel_code_lookup: ds.channel_code_lookup,
   };
 }

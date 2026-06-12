@@ -37,7 +37,10 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <main className="mx-auto max-w-6xl px-6 py-8">{children}</main>
         <footer className="mx-auto max-w-6xl px-6 py-10 text-xs text-slate-500">
           Synthetic dataset for the Revenue Manager Agent hackathon. Data is
-          regenerated daily and is always forward-looking from today.
+          regenerated daily and is always forward-looking from today.{" "}
+          <Link href="/changelog" className="text-slate-400 hover:text-teal-300">
+            Dataset changelog
+          </Link>
         </footer>
       </body>
     </html>

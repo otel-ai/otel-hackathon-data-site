@@ -88,6 +88,34 @@ export const CHANNEL_CODE_LOOKUP = [
   { channel_code: "WAL", channel_name: "Walk-in", channel_group: "Offline" },
 ];
 
+export const RATE_PLAN_LOOKUP = [
+  { rate_plan_code: "BOOKBAR", plan_family: "Retail", is_commissionable: true },
+  { rate_plan_code: "GROUPBB", plan_family: "Group", is_commissionable: false },
+  { rate_plan_code: "DLY1", plan_family: "Retail", is_commissionable: false },
+  { rate_plan_code: "FITBB", plan_family: "Retail", is_commissionable: true },
+  { rate_plan_code: "CORP10BB", plan_family: "Corporate", is_commissionable: false },
+  { rate_plan_code: "PROMO1", plan_family: "Retail", is_commissionable: true },
+  { rate_plan_code: "ZEPHYR-CORP-25", plan_family: "Corporate", is_commissionable: false },
+  { rate_plan_code: "WALKIN", plan_family: "Retail", is_commissionable: false },
+];
+
+/** Effective-dated macro groups — join on stay_date, not market_code_lookup alone. */
+export const MARKET_MACRO_GROUP_HISTORY = [
+  { market_code: "OTA", valid_from: "2020-01-01", valid_to: null, macro_group: "Retail" },
+  { market_code: "BAR", valid_from: "2020-01-01", valid_to: null, macro_group: "Retail" },
+  { market_code: "PROM", valid_from: "2020-01-01", valid_to: "2025-06-01", macro_group: "Retail" },
+  { market_code: "PROM", valid_from: "2025-06-01", valid_to: null, macro_group: "Leisure Group" },
+  { market_code: "FIT", valid_from: "2020-01-01", valid_to: null, macro_group: "Leisure" },
+  { market_code: "CSR", valid_from: "2020-01-01", valid_to: null, macro_group: "Corporate" },
+  { market_code: "CNR", valid_from: "2020-01-01", valid_to: null, macro_group: "Corporate" },
+  { market_code: "CNI", valid_from: "2020-01-01", valid_to: null, macro_group: "MICE" },
+  { market_code: "CGR", valid_from: "2020-01-01", valid_to: null, macro_group: "MICE" },
+  { market_code: "EVEN", valid_from: "2020-01-01", valid_to: null, macro_group: "MICE" },
+  { market_code: "SMERF", valid_from: "2020-01-01", valid_to: null, macro_group: "Leisure Group" },
+];
+
+export const DATASET_REVISION = "2026.06.12.2";
+
 const COUNTRIES = ["US", "IE", "GB", "DE", "FR", "NL", "CA", "ES"];
 
 // ----------------------------------------------------------------------------
@@ -95,6 +123,8 @@ const COUNTRIES = ["US", "IE", "GB", "DE", "FR", "NL", "CA", "ES"];
 // ----------------------------------------------------------------------------
 export interface StayRow {
   stay_date: string;
+  property_date: string;
+  financial_status: "Posted" | "Provisional";
   daily_room_revenue_before_tax: number;
   daily_total_revenue_before_tax: number;
 }
@@ -128,9 +158,12 @@ export interface Reservation {
 export interface Dataset {
   anchor_date: string;
   generated_at: string;
+  dataset_revision: string;
   reservations: Reservation[];
   room_type_lookup: typeof ROOM_TYPE_LOOKUP;
+  rate_plan_lookup: typeof RATE_PLAN_LOOKUP;
   market_code_lookup: typeof MARKET_CODE_LOOKUP;
+  market_macro_group_history: typeof MARKET_MACRO_GROUP_HISTORY;
   channel_code_lookup: typeof CHANNEL_CODE_LOOKUP;
 }
 
@@ -305,6 +338,8 @@ function buildReservation(rng: () => number, n: number, cfg: CohortConfig): Rese
     const totalRev = round2(roomRev + (breakfast ? 18 * numberOfSpaces : 0));
     stayRows.push({
       stay_date: isoDate(stayDate),
+      property_date: isoDate(stayDate),
+      financial_status: "Posted",
       daily_room_revenue_before_tax: roomRev,
       daily_total_revenue_before_tax: totalRev,
     });
@@ -334,6 +369,120 @@ function buildReservation(rng: () => number, n: number, cfg: CohortConfig): Rese
     travel_agent_name: travelAgentName,
     stay_rows: stayRows,
   };
+}
+
+function buildZephyrReservation(anchor: Date): Reservation {
+  const arrival = new Date(Date.UTC(2025, 8, 14)); // 2025-09-14
+  const nights = 3;
+  const departure = addDays(arrival, nights);
+  const createDatetime = new Date(Date.UTC(2025, 4, 2, 9, 15, 0));
+  const stayRows: StayRow[] = [];
+  for (let i = 0; i < nights; i++) {
+    const stayDate = addDays(arrival, i);
+    stayRows.push({
+      stay_date: isoDate(stayDate),
+      property_date: isoDate(stayDate),
+      financial_status: "Posted",
+      daily_room_revenue_before_tax: 420,
+      daily_total_revenue_before_tax: 468,
+    });
+  }
+  return {
+    reservation_id: "RES-ZEPHYR-7F3A",
+    cohort: "current",
+    arrival_date: isoDate(arrival),
+    departure_date: isoDate(departure),
+    nights,
+    reservation_status: "Reserved",
+    create_datetime: isoDateTime(createDatetime),
+    cancellation_datetime: null,
+    guest_country: "GB",
+    is_block: false,
+    is_walk_in: false,
+    number_of_spaces: 2,
+    space_type: "KS",
+    market_code: "CSR",
+    channel_code: "REC",
+    source_name: "OCC Central Reservations",
+    rate_plan_code: "ZEPHYR-CORP-25",
+    adr_room: 210,
+    lead_time: 135,
+    company_name: "Zephyr Dynamics Ltd",
+    travel_agent_name: null,
+    stay_rows: stayRows,
+  };
+}
+
+function buildPropertyDateEdgeReservation(
+  reservationId: string,
+  stayDate: string,
+  propertyDate: string,
+): Reservation {
+  const stay = new Date(stayDate + "T00:00:00Z");
+  const departure = addDays(stay, 1);
+  return {
+    reservation_id: reservationId,
+    cohort: "current",
+    arrival_date: stayDate,
+    departure_date: isoDate(departure),
+    nights: 1,
+    reservation_status: "Reserved",
+    create_datetime: isoDateTime(addDays(stay, -30)),
+    cancellation_datetime: null,
+    guest_country: "IE",
+    is_block: false,
+    is_walk_in: false,
+    number_of_spaces: 1,
+    space_type: "KS",
+    market_code: "BAR",
+    channel_code: "REC",
+    source_name: "Brand website",
+    rate_plan_code: "DLY1",
+    adr_room: 185,
+    lead_time: 30,
+    company_name: null,
+    travel_agent_name: null,
+    stay_rows: [
+      {
+        stay_date: stayDate,
+        property_date: propertyDate,
+        financial_status: "Posted",
+        daily_room_revenue_before_tax: 185,
+        daily_total_revenue_before_tax: 203,
+      },
+    ],
+  };
+}
+
+function applyProvisionalRows(reservations: Reservation[], seedBase: number): void {
+  const rng = mulberry32(seedBase * 99991);
+  let marked = 0;
+  for (const reservation of reservations) {
+    if (reservation.reservation_id === "RES-ZEPHYR-7F3A") continue;
+    if (reservation.reservation_status !== "Reserved") continue;
+    if (reservation.cohort !== "current") continue;
+    for (const row of reservation.stay_rows) {
+      if (marked >= 5) return;
+      if (rng() < 0.08) {
+        row.financial_status = "Provisional";
+        marked++;
+      }
+    }
+  }
+  // Guarantee exactly five provisional rows for stable verify targets.
+  if (marked < 5) {
+    for (const reservation of reservations) {
+      if (marked >= 5) break;
+      if (reservation.reservation_status !== "Reserved" || reservation.cohort !== "current") continue;
+      for (const row of reservation.stay_rows) {
+        if (marked >= 5) break;
+        if (row.financial_status === "Posted") {
+          row.financial_status = "Provisional";
+          marked++;
+        }
+      }
+    }
+  }
 }
 
 // ----------------------------------------------------------------------------
@@ -375,12 +524,26 @@ export function generateDataset(anchorInput?: Date): Dataset {
     }
   }
 
+  applyProvisionalRows(reservations, seedBase);
+
+  reservations.push(
+    buildPropertyDateEdgeReservation("RES-EDGE-001", "2025-08-31", "2025-09-01"),
+    buildPropertyDateEdgeReservation("RES-EDGE-002", "2025-09-30", "2025-10-01"),
+    buildPropertyDateEdgeReservation("RES-EDGE-003", "2025-07-15", "2025-07-14"),
+  );
+
+  // Append last so pagination places Zephyr on the final list page.
+  reservations.push(buildZephyrReservation(anchor));
+
   return {
     anchor_date: isoDate(anchor),
     generated_at: isoDateTime(toUTCDate(anchorInput ?? new Date())),
+    dataset_revision: DATASET_REVISION,
     reservations,
     room_type_lookup: ROOM_TYPE_LOOKUP,
+    rate_plan_lookup: RATE_PLAN_LOOKUP,
     market_code_lookup: MARKET_CODE_LOOKUP,
+    market_macro_group_history: MARKET_MACRO_GROUP_HISTORY,
     channel_code_lookup: CHANNEL_CODE_LOOKUP,
   };
 }

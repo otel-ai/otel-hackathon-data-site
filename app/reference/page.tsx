@@ -5,8 +5,19 @@ import { getReference } from "@/app/actions";
 
 type Ref = Awaited<ReturnType<typeof getReference>>;
 
+const TABS = [
+  "Room types",
+  "Markets",
+  "Channels",
+  "Rate plans",
+  "Macro history",
+] as const;
+
+type Tab = (typeof TABS)[number];
+
 export default function ReferencePage() {
   const [ref, setRef] = useState<Ref | null>(null);
+  const [tab, setTab] = useState<Tab>("Room types");
 
   useEffect(() => {
     let active = true;
@@ -19,27 +30,80 @@ export default function ReferencePage() {
   if (!ref) return <p className="text-slate-500">Loading reference tables…</p>;
 
   return (
-    <div className="space-y-10">
-      <h1 className="text-2xl font-bold text-slate-100">Reference tables</h1>
+    <div className="space-y-8" data-testid="reference-page">
+      <div>
+        <h1 className="text-2xl font-bold text-slate-100">Reference tables</h1>
+        <p className="mt-1 text-sm text-slate-400">
+          Dataset revision{" "}
+          <span className="font-mono text-teal-300">{ref.dataset_revision}</span>
+        </p>
+      </div>
 
-      <LookupTable
-        title="room_type_lookup"
-        testid="room-type-lookup"
-        columns={["space_type", "room_class", "display_name", "number_of_rooms"]}
-        rows={ref.room_type_lookup}
-      />
-      <LookupTable
-        title="market_code_lookup"
-        testid="market-code-lookup"
-        columns={["market_code", "market_name", "macro_group", "description"]}
-        rows={ref.market_code_lookup}
-      />
-      <LookupTable
-        title="channel_code_lookup"
-        testid="channel-code-lookup"
-        columns={["channel_code", "channel_name", "channel_group"]}
-        rows={ref.channel_code_lookup}
-      />
+      <div className="flex flex-wrap gap-2" role="tablist">
+        {TABS.map((label) => (
+          <button
+            key={label}
+            type="button"
+            role="tab"
+            aria-selected={tab === label}
+            onClick={() => setTab(label)}
+            className={`rounded-md px-3 py-1.5 text-sm ${
+              tab === label
+                ? "bg-teal-500/20 text-teal-200"
+                : "bg-slate-800 text-slate-400 hover:text-slate-200"
+            }`}
+          >
+            {label}
+          </button>
+        ))}
+      </div>
+
+      {tab === "Room types" && (
+        <LookupTable
+          title="room_type_lookup"
+          testid="room-type-lookup"
+          columns={["space_type", "room_class", "display_name", "number_of_rooms"]}
+          rows={ref.room_type_lookup}
+        />
+      )}
+      {tab === "Markets" && (
+        <LookupTable
+          title="market_code_lookup"
+          testid="market-code-lookup"
+          columns={["market_code", "market_name", "macro_group", "description"]}
+          rows={ref.market_code_lookup}
+        />
+      )}
+      {tab === "Channels" && (
+        <LookupTable
+          title="channel_code_lookup"
+          testid="channel-code-lookup"
+          columns={["channel_code", "channel_name", "channel_group"]}
+          rows={ref.channel_code_lookup}
+        />
+      )}
+      {tab === "Rate plans" && (
+        <LookupTable
+          title="rate_plan_lookup"
+          testid="rate-plan-lookup"
+          columns={["rate_plan_code", "plan_family", "is_commissionable"]}
+          rows={ref.rate_plan_lookup.map((row) => ({
+            ...row,
+            is_commissionable: String(row.is_commissionable),
+          }))}
+        />
+      )}
+      {tab === "Macro history" && (
+        <LookupTable
+          title="market_macro_group_history"
+          testid="market-macro-history"
+          columns={["market_code", "valid_from", "valid_to", "macro_group"]}
+          rows={ref.market_macro_group_history.map((row) => ({
+            ...row,
+            valid_to: row.valid_to ?? "—",
+          }))}
+        />
+      )}
     </div>
   );
 }
